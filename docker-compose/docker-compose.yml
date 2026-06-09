@@ -1,0 +1,15 @@
+services:
+  web:
+    build: 
+      context: ../
+      dockerfile: dockerfiles/Dockerfile.oc
+    image: ${IMAGE_NAME:-html-docker-app}
+    container_name: html-docker-app
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+
+# docker-compose -f docker-compose.yml -p html-docker-app up --build -d
+
+#docker build -t ghcr.io/<Github-Username>/html-openshift-app:v1 .
+#docker push ghcr.io/<Github-Username>/html-openshift-app:v1
