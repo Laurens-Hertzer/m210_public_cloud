@@ -1,0 +1,5 @@
+FROM nginxinc/nginx-unprivileged
+
+COPY apps/web /usr/share/nginx/html
+
+# docker build -f Dockerfile.oc -t ghcr.io/laurens-hertzer/html-openshift-app:v1 .

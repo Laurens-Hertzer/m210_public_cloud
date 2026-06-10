@@ -1,0 +1,5 @@
+FROM nginx
+
+COPY ../aps/web /usr/share/nginx/html
+
+# docker build -f Dockerfile -t 3.2_erster_webserver .
