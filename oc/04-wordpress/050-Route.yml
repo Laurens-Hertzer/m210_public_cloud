@@ -1,0 +1,17 @@
+---
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: wordpress-openshift-app
+  labels:
+    app: wordpress-openshift-app
+    app.kubernetes.io/part-of: wordpress-openshift-app
+spec:
+  to:
+    kind: Service
+    name: wordpress-openshift-app
+  port:
+    targetPort: wordpress-openshift-app
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect

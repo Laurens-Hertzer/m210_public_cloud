@@ -1,0 +1,114 @@
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: wordpress-openshift-app
+  labels:
+    app: wordpress-openshift-app
+    app.kubernetes.io/part-of: wordpress-openshift-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wordpress-openshift-app
+  template:
+    metadata:
+      labels:
+        app: wordpress-openshift-app
+    spec:
+      containers:
+      - name: wordpress-openshift-app
+        image: bitnami/wordpress:latest # Bitnami WordPress ist Non-Root und super
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        resources: 
+          limits:
+            cpu: '2'
+            memory: 512Mi
+          requests:
+            cpu: '1'
+            memory: 256Mi
+        imagePullPolicy: IfNotPresent # Verhindert erneutes Blockieren bei Docker Hub
+        env:
+        - name: WORDPRESS_DATABASE_HOST
+          value: wordpress-openshift-app-database # HIER KORRIGIERT: Der Port :3306 wurde entfernt
+        - name: WORDPRESS_DATABASE_USER
+          valueFrom:
+            secretKeyRef:
+              name: wordpress-openshift-app-secret
+              key: database-user
+        - name: WORDPRESS_DATABASE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: wordpress-openshift-app-secret
+              key: database-password
+        - name: WORDPRESS_DATABASE_NAME
+          valueFrom:
+            secretKeyRef:
+              name: wordpress-openshift-app-secret
+              key: database-name
+        - name: WORDPRESS_USERNAME
+          value: admin
+        - name: WORDPRESS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: wordpress-openshift-app-secret
+              key: database-password
+        - name: WORDPRESS_HOSTNAME
+          value: wordpress-openshift-app-264439-lhertzer.apps.exoscale-ch-gva-2-0.appuio.cloud
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: wordpress-openshift-app-database
+  labels:
+    app: wordpress-openshift-app
+    app.kubernetes.io/part-of: wordpress-openshift-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wordpress-openshift-app-database
+  template:
+    metadata:
+      labels:
+        app: wordpress-openshift-app-database
+    spec:
+      volumes:
+      - name: wordpress-openshift-app-database-data
+        persistentVolumeClaim:
+          claimName: wordpress-openshift-app-database-data
+      containers:
+      - name: wordpress-openshift-app-database
+        resources: {}
+        env:
+        # Die SCL-Standardvariablen für MariaDB (laufen garantiert ohne Root)
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: wordpress-openshift-app-secret
+              key: database-root-password
+        - name: MYSQL_USER
+          valueFrom:
+            secretKeyRef:
+              name: wordpress-openshift-app-secret
+              key: database-user
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: wordpress-openshift-app-secret
+              key: database-password
+        - name: MYSQL_DATABASE
+          valueFrom:
+            secretKeyRef:
+              name: wordpress-openshift-app-secret
+              key: database-name
+        ports:
+        - containerPort: 3306
+          protocol: TCP
+        volumeMounts:
+        - name: wordpress-openshift-app-database-data
+          mountPath: /var/lib/mysql/data # Wichtig für SCL MariaDB Speicherort
+        image: quay.io/sclorg/mariadb-1011-c9s:latest # 100% Non-Root & ohne Docker-Hub-Sperre
+        imagePullPolicy: Always

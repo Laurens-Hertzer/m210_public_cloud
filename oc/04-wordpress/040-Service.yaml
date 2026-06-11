@@ -1,0 +1,32 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: wordpress-openshift-app
+  labels:
+    app: wordpress-openshift-app
+    app.kubernetes.io/part-of: wordpress-openshift-app
+spec:
+  ports:
+    - name: wordpress-openshift-app
+      protocol: TCP
+      port: 80
+      targetPort: 8080 # Leitet externen Port 80 an Container-Port 8080 weiter
+  selector:
+    app: wordpress-openshift-app
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: wordpress-openshift-app-database
+  labels:
+    app: wordpress-openshift-app
+    app.kubernetes.io/part-of: wordpress-openshift-app
+spec:
+  ports:
+    - name: wordpress-openshift-app-database
+      protocol: TCP
+      port: 3306
+      targetPort: 3306
+  selector:
+    app: wordpress-openshift-app-database

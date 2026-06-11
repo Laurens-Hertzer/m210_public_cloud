@@ -1,0 +1,23 @@
+---
+kind : PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: html-openshift-app-database-data
+  labels:
+    app: html-openshift-app
+    app.kubernetes.io/part-of: html-openshift-app
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  storageClassName: rbd-storagepool-cluster
+  volumeMode: Filesystem
+
+
+#change name
+label app
+label part of
+
+wmglich storage

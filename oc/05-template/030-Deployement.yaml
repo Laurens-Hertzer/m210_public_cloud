@@ -80,3 +80,13 @@ spec:
           mountPath: /var/lib/pgsql/data
         image: 'registry.redhat.io/rhel8/postgresql-15:latest'
         imagePullPolicy: Always
+
+
+#change name
+label app
+label part of
+
+
+image ändern
+
+containerport ändern
