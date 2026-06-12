@@ -1,0 +1,38 @@
+---
+# ============================================================
+# SERVICE: Frontend / Backend App
+# ============================================================
+kind: Service
+apiVersion: v1
+metadata:
+  name: MY-APP                         # ÄNDERN: my-app
+  labels:
+    app: MY-APP                        # ÄNDERN: my-app
+    app.kubernetes.io/part-of: MY-APP  # ÄNDERN: my-app
+spec:
+  ports:
+    - name: MY-APP                     # ÄNDERN: my-app
+      protocol: TCP
+      port: 8080                       # ANPASSEN: Port deiner App
+      targetPort: 8080                 # ANPASSEN: containerPort aus Deployment
+  selector:
+    app: MY-APP                        # ÄNDERN: my-app
+---
+# ============================================================
+# SERVICE: MariaDB Datenbank (ClusterIP - nur intern)
+# ============================================================
+kind: Service
+apiVersion: v1
+metadata:
+  name: MY-APP-database                # ÄNDERN: my-app-database
+  labels:
+    app: MY-APP                        # ÄNDERN: my-app
+    app.kubernetes.io/part-of: MY-APP  # ÄNDERN: my-app
+spec:
+  ports:
+    - name: MY-APP-database            # ÄNDERN: my-app-database
+      protocol: TCP
+      port: 3306
+      targetPort: 3306
+  selector:
+    app: MY-APP-database               # ÄNDERN: my-app-database

@@ -1,0 +1,75 @@
+# ============================================================
+# Docker Compose - 3-Tier App mit MariaDB / MySQL
+# Lokal testen: docker compose up -d
+# ============================================================
+services:
+
+  # ----------------------------------------------------------
+  # TIER 1: Frontend (optional, falls separates Frontend)
+  # ----------------------------------------------------------
+  # frontend:
+  #   image: nginx:alpine                # ANPASSEN
+  #   ports:
+  #     - "80:80"
+  #   depends_on:
+  #     - backend
+  #   networks:
+  #     - app-network
+
+  # ----------------------------------------------------------
+  # TIER 2: Backend / App
+  # ----------------------------------------------------------
+  app:
+    image: ghcr.io/USER/MY-APP:v1       # ÄNDERN: dein Image
+    # build: .                          # ALTERNATIV: lokal bauen
+    container_name: my-app
+    ports:
+      - "8080:8080"                     # ANPASSEN: host:container
+    environment:
+      - DB_HOST=database                # = Service-Name der DB (unten)
+      - DB_PORT=3306
+      - DB_NAME=${MYSQL_DATABASE}
+      - DB_USER=${MYSQL_USER}
+      - DB_PASSWORD=${MYSQL_PASSWORD}
+      # Falls die App eine DATABASE_URL erwartet:
+      # - DATABASE_URL=mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@database:3306/${MYSQL_DATABASE}
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # ----------------------------------------------------------
+  # TIER 3: MariaDB Datenbank
+  # ----------------------------------------------------------
+  database:
+    image: mariadb:10.11                # ODER: registry.redhat.io/rhel8/mariadb-105:latest
+    container_name: my-app-database
+    environment:
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-mydb}
+      - MYSQL_USER=${MYSQL_USER:-myuser}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-mypassword}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-rootpassword}
+    ports:
+      - "3306:3306"                     # Optional: nur zum lokalen Debuggen
+    volumes:
+      - database-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
+    restart: unless-stopped
+
+# ----------------------------------------------------------
+# Volumes & Networks
+# ----------------------------------------------------------
+volumes:
+  database-data:
+
+networks:
+  app-network:
+    driver: bridge

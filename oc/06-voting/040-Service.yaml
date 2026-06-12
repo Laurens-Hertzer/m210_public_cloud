@@ -1,40 +1,64 @@
----
-kind: Service
 apiVersion: v1
+kind: Service
 metadata:
-  name: html-openshift-app
+  name: voting-app-vote-database
   labels:
-    app: html-openshift-app
-    app.kubernetes.io/part-of: html-openshift-app
+    app: voting-app
 spec:
   ports:
-    - name: html-openshift-app
-      protocol: TCP
-      port: 8080
-      targetPort: 8080
-  selector:
-    app: html-openshift-app
----
-kind: Service
-apiVersion: v1
-metadata:
-  name: html-openshift-app-database
-  labels:
-    app: html-openshift-app
-    app.kubernetes.io/part-of: html-openshift-app
-spec:
-  ports:
-    - name: html-openshift-app-database
-      protocol: TCP
-      port: 5432
+    - port: 5432
       targetPort: 5432
   selector:
-    app: html-openshift-app-database
-
-
-#change name
-label app
-label part of
-
-image 
-port
+    component: vote-database
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: voting-app-backend
+  labels:
+    app: voting-app
+spec:
+  ports:
+    - port: 8080
+      targetPort: 8080
+  selector:
+    component: backend
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: voting-app-vote-frontend
+  labels:
+    app: voting-app
+spec:
+  ports:
+    - port: 80
+      targetPort: 80
+  selector:
+    component: vote-frontend
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: voting-app-result-frontend
+  labels:
+    app: voting-app
+spec:
+  ports:
+    - port: 80
+      targetPort: 80
+  selector:
+    component: result-frontend
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: voting-app-pgadmin
+  labels:
+    app: voting-app
+spec:
+  ports:
+    - port: 5050
+      targetPort: 80
+  selector:
+    component: pgadmin

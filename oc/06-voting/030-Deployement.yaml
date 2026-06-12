@@ -1,92 +1,253 @@
----
-kind: Deployment
-apiVersion: apps/v1
+apiVersion: image.openshift.io/v1
+kind: ImageStream
 metadata:
-  name: html-openshift-app
+  name: voting-app-backend
   labels:
-    app: html-openshift-app
-    app.kubernetes.io/part-of: html-openshift-app
+    app: voting-app
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: voting-app-backend
+  labels:
+    app: voting-app
+spec:
+  source:
+    type: Git
+    git:
+      uri: "https://github.com/dein-user/dein-repo.git" # Hier deine echte Git-URI eintragen
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: Dockerfile.backend
+  output:
+    to:
+      kind: ImageStreamTag
+      name: voting-app-backend:latest
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: voting-app-vote-frontend
+  labels:
+    app: voting-app
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: voting-app-vote-frontend
+  labels:
+    app: voting-app
+spec:
+  source:
+    type: Git
+    git:
+      uri: "https://github.com/dein-user/dein-repo.git"
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: Dockerfile.vote-frontend
+  output:
+    to:
+      kind: ImageStreamTag
+      name: voting-app-vote-frontend:latest
+---
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: voting-app-result-frontend
+  labels:
+    app: voting-app
+---
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: voting-app-result-frontend
+  labels:
+    app: voting-app
+spec:
+  source:
+    type: Git
+    git:
+      uri: "https://github.com/dein-user/dein-repo.git"
+  strategy:
+    type: Docker
+    dockerStrategy:
+      dockerfilePath: Dockerfile.result-frontend
+  output:
+    to:
+      kind: ImageStreamTag
+      name: voting-app-result-frontend:latest
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: voting-app-vote-database
+  labels:
+    app: voting-app
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: html-openshift-app
+      component: vote-database
   template:
     metadata:
       labels:
-        app: html-openshift-app
+        component: vote-database
+        app: voting-app
     spec:
       containers:
-      - name: html-openshift-app
-        image: 
-          ghcr.io/laurens-hertzer/html-openshift-app:v1
-        ports:
-        - containerPort: 8080
-          protocol: TCP
-        resources: 
-          limits:
-            cpu: '2'
-            memory: 200Mi
-          requests:
-            cpu: '1'
-            memory: 100Mi
-        imagePullPolicy: Always
----
-kind: Deployment
-apiVersion: apps/v1
-metadata:
-  name: html-openshift-app-database
-  labels:
-    app: html-openshift-app
-    app.kubernetes.io/part-of: html-openshift-app
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: html-openshift-app-database
-  template:
-    metadata:
-      labels:
-        app: html-openshift-app-database
-    spec:
+        - name: postgres
+          image: postgres:15
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              valueFrom: { secretKeyRef: { name: voting-app-secrets, key: POSTGRES_DB } }
+            - name: POSTGRES_USER
+              valueFrom: { secretKeyRef: { name: voting-app-secrets, key: POSTGRES_USER } }
+            - name: POSTGRES_PASSWORD
+              valueFrom: { secretKeyRef: { name: voting-app-secrets, key: POSTGRES_PASSWORD } }
+          volumeMounts:
+            - name: db-storage
+              mountPath: /var/lib/postgresql/data
       volumes:
-      - name: html-openshift-app-database-data
-        persistentVolumeClaim:
-          claimName: html-openshift-app-database-data
+        - name: db-storage
+          persistentVolumeClaim:
+            claimName: voting-app-database-pvc
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: voting-app-backend
+  labels:
+    app: voting-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: backend
+  template:
+    metadata:
+      labels:
+        component: backend
+        app: voting-app
+    spec:
       containers:
-      - name: html-openshift-app-database
-        resources: {}
-        env:
-        - name: POSTGRESQL_USER
-          valueFrom:
-            secretKeyRef:
-              name: html-openshift-app-secret
-              key: database-user
-        - name: POSTGRESQL_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: html-openshift-app-secret
-              key: database-password
-        - name: POSTGRESQL_DATABASE
-          valueFrom:
-            secretKeyRef:
-              name: html-openshift-app-secret
-              key: database-name
-        ports:
-        - containerPort: 5432
-          protocol: TCP
-        volumeMounts:
-        - name: html-openshift-app-database-data
-          mountPath: /var/lib/pgsql/data
-        image: 'registry.redhat.io/rhel8/postgresql-15:latest'
-        imagePullPolicy: Always
-
-
-#change name
-label app
-label part of
-
-
-image ändern
-
-containerport ändern
+        - name: backend
+          image: voting-app-backend:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: POSTGRES_HOST
+              value: "voting-app-vote-database"
+            - name: POSTGRES_DB
+              valueFrom: { secretKeyRef: { name: voting-app-secrets, key: POSTGRES_DB } }
+            - name: POSTGRES_USER
+              valueFrom: { secretKeyRef: { name: voting-app-secrets, key: POSTGRES_USER } }
+            - name: POSTGRES_PASSWORD
+              valueFrom: { secretKeyRef: { name: voting-app-secrets, key: POSTGRES_PASSWORD } }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: voting-app-vote-frontend
+  labels:
+    app: voting-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: vote-frontend
+  template:
+    metadata:
+      labels:
+        component: vote-frontend
+        app: voting-app
+    spec:
+      containers:
+        - name: vote-frontend
+          image: voting-app-vote-frontend:latest
+          ports:
+            - containerPort: 80
+          env:
+            - name: POSTGRES_HOST
+              value: "voting-app-vote-database"
+            - name: POSTGRES_DB
+              valueFrom: { secretKeyRef: { name: voting-app-secrets, key: POSTGRES_DB } }
+            - name: POSTGRES_USER
+              valueFrom: { secretKeyRef: { name: voting-app-secrets, key: POSTGRES_USER } }
+            - name: POSTGRES_PASSWORD
+              valueFrom: { secretKeyRef: { name: voting-app-secrets, key: POSTGRES_PASSWORD } }
+            - name: BACKEND_PROTOCOL
+              valueFrom: { secretKeyRef: { name: voting-app-secrets, key: BACKEND_PROTOCOL } }
+            - name: BACKEND_HOST
+              valueFrom: { secretKeyRef: { name: voting-app-secrets, key: BACKEND_HOST } }
+            - name: BACKEND_PORT
+              valueFrom: { secretKeyRef: { name: voting-app-secrets, key: BACKEND_PORT } }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: voting-app-result-frontend
+  labels:
+    app: voting-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: result-frontend
+  template:
+    metadata:
+      labels:
+        component: result-frontend
+        app: voting-app
+    spec:
+      containers:
+        - name: result-frontend
+          image: voting-app-result-frontend:latest
+          ports:
+            - containerPort: 80
+          env:
+            - name: POSTGRES_HOST
+              value: "voting-app-vote-database"
+            - name: POSTGRES_DB
+              valueFrom: { secretKeyRef: { name: voting-app-secrets, key: POSTGRES_DB } }
+            - name: POSTGRES_USER
+              valueFrom: { secretKeyRef: { name: voting-app-secrets, key: POSTGRES_USER } }
+            - name: POSTGRES_PASSWORD
+              valueFrom: { secretKeyRef: { name: voting-app-secrets, key: POSTGRES_PASSWORD } }
+            - name: BACKEND_PROTOCOL
+              valueFrom: { secretKeyRef: { name: voting-app-secrets, key: BACKEND_PROTOCOL } }
+            - name: BACKEND_HOST
+              valueFrom: { secretKeyRef: { name: voting-app-secrets, key: BACKEND_HOST } }
+            - name: BACKEND_PORT
+              valueFrom: { secretKeyRef: { name: voting-app-secrets, key: BACKEND_PORT } }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: voting-app-pgadmin
+  labels:
+    app: voting-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: pgadmin
+  template:
+    metadata:
+      labels:
+        component: pgadmin
+        app: voting-app
+    spec:
+      containers:
+        - name: pgadmin
+          image: ghcr.io/modul-i-ch-109/pgadmin4
+          ports:
+            - containerPort: 80
+          env:
+            - name: PGADMIN_DEFAULT_EMAIL
+              valueFrom: { secretKeyRef: { name: voting-app-secrets, key: PGADMIN_DEFAULT_EMAIL } }
+            - name: PGADMIN_DEFAULT_PASSWORD
+              valueFrom: { secretKeyRef: { name: voting-app-secrets, key: PGADMIN_DEFAULT_PASSWORD } }

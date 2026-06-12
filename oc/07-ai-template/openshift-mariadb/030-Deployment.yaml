@@ -1,0 +1,119 @@
+---
+# ============================================================
+# DEPLOYMENT: Frontend / Backend App
+# ============================================================
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: MY-APP                         # ÄNDERN: my-app
+  labels:
+    app: MY-APP                        # ÄNDERN: my-app
+    app.kubernetes.io/part-of: MY-APP  # ÄNDERN: my-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: MY-APP                      # ÄNDERN: my-app
+  template:
+    metadata:
+      labels:
+        app: MY-APP                    # ÄNDERN: my-app
+    spec:
+      containers:
+      - name: MY-APP                   # ÄNDERN: my-app
+        image: ghcr.io/USER/MY-APP:v1  # ÄNDERN: dein Image
+        ports:
+        - containerPort: 8080          # ANPASSEN: z.B. 3000, 5000, 8080
+          protocol: TCP
+        env:
+        - name: DB_HOST
+          valueFrom:
+            secretKeyRef:
+              name: MY-APP-secret      # ÄNDERN: my-app-secret
+              key: database-host
+        - name: DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: MY-APP-secret      # ÄNDERN: my-app-secret
+              key: database-name
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: MY-APP-secret      # ÄNDERN: my-app-secret
+              key: database-user
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: MY-APP-secret      # ÄNDERN: my-app-secret
+              key: database-password
+        resources:
+          limits:
+            cpu: '2'
+            memory: 200Mi
+          requests:
+            cpu: '1'
+            memory: 100Mi
+        imagePullPolicy: Always
+---
+# ============================================================
+# DEPLOYMENT: MariaDB Datenbank
+# ============================================================
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: MY-APP-database                # ÄNDERN: my-app-database
+  labels:
+    app: MY-APP                        # ÄNDERN: my-app
+    app.kubernetes.io/part-of: MY-APP  # ÄNDERN: my-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: MY-APP-database             # ÄNDERN: my-app-database
+  template:
+    metadata:
+      labels:
+        app: MY-APP-database           # ÄNDERN: my-app-database
+    spec:
+      volumes:
+      - name: MY-APP-database-data     # ÄNDERN: my-app-database-data
+        persistentVolumeClaim:
+          claimName: MY-APP-database-data  # ÄNDERN: my-app-database-data (= PVC Name)
+      containers:
+      - name: MY-APP-database          # ÄNDERN: my-app-database
+        image: 'registry.redhat.io/rhel8/mariadb-105:latest'  # ODER: mariadb:10.11
+        ports:
+        - containerPort: 3306
+          protocol: TCP
+        env:
+        - name: MYSQL_USER
+          valueFrom:
+            secretKeyRef:
+              name: MY-APP-secret      # ÄNDERN: my-app-secret
+              key: database-user
+        - name: MYSQL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: MY-APP-secret      # ÄNDERN: my-app-secret
+              key: database-password
+        - name: MYSQL_DATABASE
+          valueFrom:
+            secretKeyRef:
+              name: MY-APP-secret      # ÄNDERN: my-app-secret
+              key: database-name
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: MY-APP-secret      # ÄNDERN: my-app-secret
+              key: database-root-password
+        resources:
+          limits:
+            cpu: '1'
+            memory: 512Mi
+          requests:
+            cpu: '250m'
+            memory: 256Mi
+        volumeMounts:
+        - name: MY-APP-database-data   # ÄNDERN: my-app-database-data
+          mountPath: /var/lib/mysql/data
+        imagePullPolicy: Always

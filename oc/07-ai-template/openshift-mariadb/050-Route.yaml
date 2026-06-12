@@ -1,0 +1,17 @@
+---
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: MY-APP                         # ÄNDERN: my-app
+  labels:
+    app: MY-APP                        # ÄNDERN: my-app
+    app.kubernetes.io/part-of: MY-APP  # ÄNDERN: my-app
+spec:
+  to:
+    kind: Service
+    name: MY-APP                       # ÄNDERN: my-app (= Service Name)
+  port:
+    targetPort: MY-APP                 # ÄNDERN: my-app (= spec.ports.name im Service)
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect

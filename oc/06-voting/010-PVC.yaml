@@ -2,10 +2,10 @@
 kind : PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: html-openshift-app-database-data
+  name: voting-app-database-data
   labels:
-    app: html-openshift-app
-    app.kubernetes.io/part-of: html-openshift-app
+    app: voting-app
+    app.kubernetes.io/part-of: voting-app
 spec:
   accessModes:
     - ReadWriteOnce
@@ -17,7 +17,7 @@ spec:
 
 
 #change name
-label app
-label part of
+#label app
+#label part of
 
-wmglich storage
+#wmglich storage

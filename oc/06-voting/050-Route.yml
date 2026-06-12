@@ -1,17 +1,38 @@
----
-kind: Route
 apiVersion: route.openshift.io/v1
+kind: Route
 metadata:
-  name: html-openshift-app
+  name: voting-app-vote-frontend
   labels:
-    app: html-openshift-app
-    app.kubernetes.io/part-of: html-openshift-app
+    app: voting-app
 spec:
   to:
     kind: Service
-    name: html-openshift-app
+    name: voting-app-vote-frontend
   port:
-    targetPort: html-openshift-app
-  tls:
-    termination: edge
-    insecureEdgeTerminationPolicy: Redirect
+    targetPort: 80
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: voting-app-result-frontend
+  labels:
+    app: voting-app
+spec:
+  to:
+    kind: Service
+    name: voting-app-result-frontend
+  port:
+    targetPort: 80
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: voting-app-pgadmin
+  labels:
+    app: voting-app
+spec:
+  to:
+    kind: Service
+    name: voting-app-pgadmin
+  port:
+    targetPort: 5050

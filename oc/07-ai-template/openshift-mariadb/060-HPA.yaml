@@ -1,0 +1,22 @@
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: MY-APP                         # ÄNDERN: my-app
+  labels:
+    app: MY-APP                        # ÄNDERN: my-app
+    app.kubernetes.io/part-of: MY-APP  # ÄNDERN: my-app
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: MY-APP                       # ÄNDERN: my-app (= Deployment Name der App, NICHT DB)
+  minReplicas: 1
+  maxReplicas: 5                       # ANPASSEN je nach Anforderung
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 80       # ANPASSEN: Schwellenwert in %

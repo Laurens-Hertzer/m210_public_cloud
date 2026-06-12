@@ -1,0 +1,16 @@
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: MY-APP-database-data          # ÄNDERN: my-app-database-data
+  labels:
+    app: MY-APP                        # ÄNDERN: my-app
+    app.kubernetes.io/part-of: MY-APP  # ÄNDERN: my-app
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi                     # ANPASSEN falls nötig
+  storageClassName: rbd-storagepool-cluster
+  volumeMode: Filesystem

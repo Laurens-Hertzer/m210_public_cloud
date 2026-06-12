@@ -1,0 +1,74 @@
+# ============================================================
+# Docker Compose - 3-Tier App mit PostgreSQL
+# Lokal testen: docker compose up -d
+# ============================================================
+services:
+
+  # ----------------------------------------------------------
+  # TIER 1: Frontend (optional, falls separates Frontend)
+  # ----------------------------------------------------------
+  # frontend:
+  #   image: nginx:alpine                # ANPASSEN
+  #   ports:
+  #     - "80:80"
+  #   depends_on:
+  #     - backend
+  #   networks:
+  #     - app-network
+
+  # ----------------------------------------------------------
+  # TIER 2: Backend / App
+  # ----------------------------------------------------------
+  app:
+    image: ghcr.io/USER/MY-APP:v1       # ÄNDERN: dein Image
+    # build: .                          # ALTERNATIV: lokal bauen
+    container_name: my-app
+    ports:
+      - "8080:8080"                     # ANPASSEN: host:container
+    environment:
+      - DB_HOST=database                # = Service-Name der DB (unten)
+      - DB_PORT=5432
+      - DB_NAME=${POSTGRES_DB}
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      # Falls die App eine DATABASE_URL erwartet:
+      # - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # ----------------------------------------------------------
+  # TIER 3: PostgreSQL Datenbank
+  # ----------------------------------------------------------
+  database:
+    image: postgres:15                  # ODER: registry.redhat.io/rhel8/postgresql-15:latest
+    container_name: my-app-database
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-mydb}
+      - POSTGRES_USER=${POSTGRES_USER:-myuser}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-mypassword}
+    ports:
+      - "5432:5432"                     # Optional: nur zum lokalen Debuggen
+    volumes:
+      - database-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-myuser}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
+    restart: unless-stopped
+
+# ----------------------------------------------------------
+# Volumes & Networks
+# ----------------------------------------------------------
+volumes:
+  database-data:
+
+networks:
+  app-network:
+    driver: bridge
